@@ -82,6 +82,8 @@ Here's what's in this repo:
 
 The database can be explored at http://localhost:7474.
 
+The database requires http://localhost:7867 to run. If the port is not opened automatically, add manually.
+
 ## App 1 - Support Agent Bot
 
 UI: http://localhost:8501
