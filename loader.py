@@ -2,6 +2,7 @@ import os
 import requests
 from dotenv import load_dotenv
 from langchain.graphs import Neo4jGraph
+from langchain.vectorstores.chroma import Chroma
 import streamlit as st
 from streamlit.logger import get_logger
 from chains import load_embedding_model
@@ -32,6 +33,9 @@ neo4j_graph = Neo4jGraph(url=url, username=username, password=password)
 create_constraints(neo4j_graph)
 create_vector_index(neo4j_graph, dimension)
 
+# Initialize ChromaDB
+chromadb = Chroma(persist_directory="data_vec", embedding_function=embeddings)
+
 
 def load_so_data(tag: str = "neo4j", page: int = 1) -> None:
     parameters = (
@@ -52,14 +56,48 @@ def load_high_score_so_data() -> None:
 
 
 def insert_so_data(data: dict) -> None:
+    texts = []
+    metadatas = []
+
     # Calculate embedding values for questions and answers
     for q in data["items"]:
+        # Neo4j
         question_text = q["title"] + "\n" + q["body_markdown"]
-        q["embedding"] = embeddings.embed_query(question_text)
+        question_embedding = embeddings.embed_query(question_text)
+        q["embedding"] = question_embedding
+
+        # ChromaDB
+        texts.append(question_text)
+        metadatas.append({
+            "type": "question",
+            "title": q["title"],
+            "body": q["body_markdown"],
+            "link": q["link"],
+            "score": str(q["score"]),
+            "favorite_count": str(q["favorite_count"]),
+            "creation_date": str(q["creation_date"]),
+            "tags": ','.join(q["tags"]),
+            "question_id": str(q["question_id"]),
+        })
+
         for a in q["answers"]:
-            a["embedding"] = embeddings.embed_query(
-                question_text + "\n" + a["body_markdown"]
-            )
+            # Neo4j
+            answer_text = question_text + "\n" + a["body_markdown"]
+            answer_embedding = embeddings.embed_query(answer_text)
+            a["embedding"] = answer_embedding
+
+            # ChromaDB
+            texts.append(answer_text)
+            metadatas.append({
+                "type": "answer",
+                "body": a["body_markdown"],
+                "link": a["owner"]["link"],
+                "score": str(a["score"]),
+                "is_accepted": str(a["is_accepted"]),
+                "creation_date": str(a["creation_date"]),
+                "answer_id": str(a["answer_id"]),
+                "question_id": str(q["question_id"]),
+            })
 
     # Cypher, the query language of Neo4j, is used to import the data
     # https://neo4j.com/docs/getting-started/cypher-intro/
@@ -83,7 +121,7 @@ def insert_so_data(data: dict) -> None:
             answer.embedding = a.embedding
         MERGE (answerer:User {id:coalesce(a.owner.user_id, "deleted")}) 
         ON CREATE SET answerer.display_name = a.owner.display_name,
-                      answerer.reputation= a.owner.reputation
+                      answerer.reputation = a.owner.reputation
         MERGE (answer)<-[:PROVIDED]-(answerer)
     )
     WITH * WHERE NOT q.owner.user_id IS NULL
@@ -93,6 +131,13 @@ def insert_so_data(data: dict) -> None:
     MERGE (owner)-[:ASKED]->(question)
     """
     neo4j_graph.query(import_query, {"data": data["items"]})
+
+    # Insert data into ChromaDB
+    try:
+        chromadb.add_texts(texts, metadatas)
+        chromadb.persist()
+    except Exception as e:
+        logger.error(f"Error inserting into ChromaDB: {e}")
 
 
 # Streamlit

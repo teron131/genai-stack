@@ -1,5 +1,6 @@
 .env
 data/
+data_vec/
 embedding_model/*
 !embedding_model/.ignore
 front-end/embedding_model/**

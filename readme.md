@@ -118,7 +118,8 @@ DB client: http://localhost:7474
 - load high ranked questions (regardless of tags) to support the ticket generation feature of App 1.
 - if you intend to change the embedding models, but seeing dimensions conflict problem, try to remove the graph data base by
 ```
-rm -rf data
+sudo rm -rf data
+sudo rm -rf data_vec
 ```
 
 
