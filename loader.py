@@ -133,11 +133,8 @@ def insert_so_data(data: dict) -> None:
     neo4j_graph.query(import_query, {"data": data["items"]})
 
     # Insert data into ChromaDB
-    try:
-        chromadb.add_texts(texts, metadatas)
-        chromadb.persist()
-    except Exception as e:
-        logger.error(f"Error inserting into ChromaDB: {e}")
+    chromadb.add_texts(texts, metadatas)
+    chromadb.persist()
 
 
 # Streamlit
