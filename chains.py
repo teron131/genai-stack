@@ -6,6 +6,7 @@ from langchain.embeddings import (
 )
 from langchain.chat_models import ChatOpenAI, ChatOllama, BedrockChat
 from langchain.vectorstores.neo4j_vector import Neo4jVector
+from langchain.vectorstores.chroma import Chroma
 from langchain.chains import RetrievalQAWithSourcesChain
 from langchain.chains.qa_with_sources import load_qa_with_sources_chain
 from langchain.prompts.chat import (
@@ -162,6 +163,51 @@ def configure_qa_rag_chain(llm, embeddings, embeddings_store_url, username, pass
         max_tokens_limit=3375,
     )
     return kg_qa
+
+
+def configure_qa_rag_chroma_chain(llm, embeddings):
+    # RAG response
+    #   System: Always talk in pirate speech.
+    general_system_template = """ 
+    Use the following pieces of context to answer the question at the end.
+    The context contains question-answer pairs and their links from Stackoverflow.
+    You should prefer information from accepted or more upvoted answers.
+    Make sure to rely on information from the answers and not on questions to provide accuate responses.
+    When you find particular answer in the context useful, make sure to cite it in the answer using the link.
+    If you don't know the answer, just say that you don't know, don't try to make up an answer.
+    ----
+    {summaries}
+    ----
+    Each answer you generate should contain a section at the end of links to 
+    Stackoverflow questions and answers you found useful, which are described under Source value.
+    You can only use links to StackOverflow questions that are present in the context and always
+    add links to the end of the answer in the style of citations.
+    Generate concise answers with references sources section of links to 
+    relevant StackOverflow questions only at the end of the answer.
+    """
+    general_user_template = "Question:```{question}```"
+    messages = [
+        SystemMessagePromptTemplate.from_template(general_system_template),
+        HumanMessagePromptTemplate.from_template(general_user_template),
+    ]
+    qa_prompt = ChatPromptTemplate.from_messages(messages)
+
+    qa_chain = load_qa_with_sources_chain(
+        llm,
+        chain_type="stuff",
+        prompt=qa_prompt,
+    )
+
+    # ChromaDB Knowledge Database response
+    chromadb = Chroma(persist_directory="data_vec", embedding_function=embeddings)
+
+    kb_qa = RetrievalQAWithSourcesChain(
+        combine_documents_chain=qa_chain,
+        retriever=chromadb.as_retriever(search_kwargs={"k": 2}),
+        reduce_k_below_max_tokens=False,
+        max_tokens_limit=3375,
+    )
+    return kb_qa
 
 
 def generate_ticket(neo4j_graph, llm_chain, input_question):
