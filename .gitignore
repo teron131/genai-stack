@@ -5,3 +5,4 @@ embedding_model/*
 !embedding_model/.ignore
 front-end/embedding_model/**
 .DS_Store
+*.pyc

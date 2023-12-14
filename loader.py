@@ -3,6 +3,7 @@ import requests
 from dotenv import load_dotenv
 from langchain.graphs import Neo4jGraph
 from langchain.vectorstores.chroma import Chroma
+from langchain_core.documents.base import Document
 import streamlit as st
 from streamlit.logger import get_logger
 from chains import load_embedding_model
@@ -56,8 +57,7 @@ def load_high_score_so_data() -> None:
 
 
 def insert_so_data(data: dict) -> None:
-    texts = []
-    metadatas = []
+    documents = []
 
     # Calculate embedding values for questions and answers
     for q in data["items"]:
@@ -67,18 +67,21 @@ def insert_so_data(data: dict) -> None:
         q["embedding"] = question_embedding
 
         # ChromaDB
-        texts.append(question_text)
-        metadatas.append({
-            "type": "question",
-            "title": q["title"],
-            "body": q["body_markdown"],
-            "link": q["link"],
-            "score": str(q["score"]),
-            "favorite_count": str(q["favorite_count"]),
-            "creation_date": str(q["creation_date"]),
-            "tags": ','.join(q["tags"]),
-            "question_id": str(q["question_id"]),
-        })
+        question_document = Document(
+            page_content=q.get("body_markdown", None),
+            metadata={
+                "type": "question",
+                "source": "stackoverflow",
+                "title": q.get("title", None),
+                "link": q.get("link", None),
+                "score": q.get("score", 0),
+                "favorite_count": q.get("favorite_count", 0),
+                "creation_date": q.get("creation_date", None),
+                "tags": ','.join(q.get("tags", [])),
+                "question_id": q.get("question_id", None),
+            }
+        )
+        documents.append(question_document)
 
         for a in q["answers"]:
             # Neo4j
@@ -87,17 +90,20 @@ def insert_so_data(data: dict) -> None:
             a["embedding"] = answer_embedding
 
             # ChromaDB
-            texts.append(answer_text)
-            metadatas.append({
-                "type": "answer",
-                "body": a["body_markdown"],
-                "link": a["owner"]["link"],
-                "score": str(a["score"]),
-                "is_accepted": str(a["is_accepted"]),
-                "creation_date": str(a["creation_date"]),
-                "answer_id": str(a["answer_id"]),
-                "question_id": str(q["question_id"]),
-            })
+            answer_document = Document(
+                page_content=a.get("body_markdown", None),
+                metadata={
+                    "type": "answer",
+                    "source": "stackoverflow",
+                    "score": a.get("score", 0),
+                    "is_accepted": a.get("is_accepted", False),
+                    "reputation": a.get("owner", {}).get("reputation", 0),
+                    "creation_date": a.get("creation_date", None),
+                    "answer_id": a.get("answer_id", None),
+                    "question_id": q.get("question_id", None),
+                }
+            )
+            documents.append(answer_document)
 
     # Cypher, the query language of Neo4j, is used to import the data
     # https://neo4j.com/docs/getting-started/cypher-intro/
@@ -133,7 +139,7 @@ def insert_so_data(data: dict) -> None:
     neo4j_graph.query(import_query, {"data": data["items"]})
 
     # Insert data into ChromaDB
-    chromadb.add_texts(texts, metadatas)
+    chromadb.add_documents(documents=documents)
     chromadb.persist()
 
 
