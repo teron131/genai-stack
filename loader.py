@@ -66,44 +66,38 @@ def insert_so_data(data: dict) -> None:
         question_embedding = embeddings.embed_query(question_text)
         q["embedding"] = question_embedding
 
-        # ChromaDB
-        question_document = Document(
-            page_content=q.get("body_markdown", None),
-            metadata={
-                "type": "question",
-                "source": "stackoverflow",
-                "title": q.get("title", None),
-                "link": q.get("link", None),
-                "score": q.get("score", 0),
-                "favorite_count": q.get("favorite_count", 0),
-                "creation_date": q.get("creation_date", None),
-                "tags": ','.join(q.get("tags", [])),
-                "question_id": q.get("question_id", None),
-            }
-        )
-        documents.append(question_document)
-
         for a in q["answers"]:
             # Neo4j
             answer_text = question_text + "\n" + a["body_markdown"]
             answer_embedding = embeddings.embed_query(answer_text)
             a["embedding"] = answer_embedding
 
-            # ChromaDB
-            answer_document = Document(
-                page_content=a.get("body_markdown", None),
+            # ChromaDB Q&A pairs
+            QA_document = Document(
+                page_content = f'''
+                    Question: {q.get("title", None)}
+                    {q.get("body_markdown", None)}
+                    Answer: {a.get("body_markdown", None)}
+                    Score: {a.get("score", 0)}
+                    Link: {q.get("link", None)}
+                ''',
                 metadata={
-                    "type": "answer",
                     "source": "stackoverflow",
+                    "title": q.get("title", None),
                     "score": a.get("score", 0),
+                    "link": q.get("link", None),
                     "is_accepted": a.get("is_accepted", False),
                     "reputation": a.get("owner", {}).get("reputation", 0),
-                    "creation_date": a.get("creation_date", None),
+                    "favorite_count": q.get("favorite_count", 0),
+                    "q_creation_date": q.get("creation_date", None),
+                    "a_creation_date": a.get("creation_date", None),
                     "answer_id": a.get("answer_id", None),
                     "question_id": q.get("question_id", None),
+                    "tags": ','.join(q.get("tags", [])),
                 }
             )
-            documents.append(answer_document)
+            print(QA_document)
+            documents.append(QA_document)
 
     # Cypher, the query language of Neo4j, is used to import the data
     # https://neo4j.com/docs/getting-started/cypher-intro/
