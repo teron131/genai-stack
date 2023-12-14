@@ -11,6 +11,7 @@ from chains import (
     load_llm,
     configure_llm_only_chain,
     configure_qa_rag_chain,
+    configure_qa_rag_chroma_chain,
     generate_ticket,
 )
 from fastapi import FastAPI, Depends
@@ -51,6 +52,9 @@ llm = load_llm(
 llm_chain = configure_llm_only_chain(llm)
 rag_chain = configure_qa_rag_chain(
     llm, embeddings, embeddings_store_url=url, username=username, password=password
+)
+rag_chroma_chain = configure_qa_rag_chroma_chain(
+    llm, embeddings
 )
 
 
@@ -111,6 +115,7 @@ async def root():
 class Question(BaseModel):
     text: str
     rag: bool = False
+    chroma: bool = False
 
 
 class BaseTicket(BaseModel):
@@ -121,7 +126,10 @@ class BaseTicket(BaseModel):
 def qstream(question: Question = Depends()):
     output_function = llm_chain
     if question.rag:
-        output_function = rag_chain
+        if question.chroma:
+            output_function = rag_chroma_chain
+        else:
+            output_function = rag_chain
 
     q = Queue()
 
@@ -143,7 +151,10 @@ def qstream(question: Question = Depends()):
 async def ask(question: Question = Depends()):
     output_function = llm_chain
     if question.rag:
-        output_function = rag_chain
+        if question.chroma:
+            output_function = rag_chroma_chain
+        else:
+            output_function = rag_chain
     result = output_function(
         {"question": question.text, "chat_history": []}, callbacks=[]
     )

@@ -13,6 +13,7 @@ from chains import (
     load_llm,
     configure_llm_only_chain,
     configure_qa_rag_chain,
+    configure_qa_rag_chroma_chain,
     generate_ticket,
 )
 
@@ -53,6 +54,10 @@ llm_chain = configure_llm_only_chain(llm)
 rag_chain = configure_qa_rag_chain(
     llm, embeddings, embeddings_store_url=url, username=username, password=password
 )
+rag_chroma_chain = configure_qa_rag_chroma_chain(
+    llm, embeddings
+)
+
 
 # Streamlit UI
 styl = f"""
@@ -132,15 +137,17 @@ def display_chat():
 
 
 def mode_select() -> str:
-    options = ["Disabled", "Enabled"]
+    options = ["Disabled", "Neo4j", "Chroma"]
     return st.radio("Select RAG mode", options, horizontal=True)
 
 
 name = mode_select()
 if name == "LLM only" or name == "Disabled":
     output_function = llm_chain
-elif name == "Vector + Graph" or name == "Enabled":
+elif name == "Vector + Graph" or name == "Neo4j":
     output_function = rag_chain
+elif name == "Vector + Chroma" or name == "Chroma":
+    output_function = rag_chroma_chain
 
 
 def open_sidebar():
