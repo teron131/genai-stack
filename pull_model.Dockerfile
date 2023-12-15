@@ -14,7 +14,7 @@ COPY <<EOF pull_model.clj
 (try
   (let [llm (get (System/getenv) "LLM")
         url (get (System/getenv) "OLLAMA_BASE_URL")]
-    (println (format "pulling ollama model %s using %s" llm url))
+    (println (format "pulling model %s using %s" llm url))
     (if (and llm url (not (#{"gpt-4" "gpt-3.5" "claudev2"} llm)))
 
       ;; ----------------------------------------------------------------------
