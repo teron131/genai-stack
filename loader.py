@@ -35,7 +35,7 @@ create_constraints(neo4j_graph)
 create_vector_index(neo4j_graph, dimension)
 
 # Initialize ChromaDB
-chromadb = Chroma(persist_directory="data_vec", embedding_function=embeddings)
+chromadb = Chroma(persist_directory="data_chroma", embedding_function=embeddings)
 
 
 def load_so_data(tag: str = "neo4j", page: int = 1) -> None:
@@ -77,9 +77,12 @@ def insert_so_data(data: dict) -> None:
                 page_content = f'''
                     Question: {q.get("title", None)}
                     {q.get("body_markdown", None)}
-                    Answer: {a.get("body_markdown", None)}
-                    Score: {a.get("score", 0)}
-                    Link: {q.get("link", None)}
+                    Answer:
+                    {a.get("body_markdown", None)}
+                    Score:
+                    {a.get("score", 0)}
+                    Link:
+                    {q.get("link", None)}
                 ''',
                 metadata={
                     "source": "stackoverflow",

@@ -119,7 +119,7 @@ DB client: http://localhost:7474
 - if you intend to change the embedding models, but seeing dimensions conflict problem, try to remove the graph data base by
 ```
 sudo rm -rf data
-sudo rm -rf data_vec
+sudo rm -rf data_chroma
 ```
 
 
