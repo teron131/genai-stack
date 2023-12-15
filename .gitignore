@@ -1,6 +1,7 @@
 .env
 data/
 data_chroma/
+data_openai/
 embedding_model/*
 !embedding_model/.ignore
 front-end/embedding_model/**

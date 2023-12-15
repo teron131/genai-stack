@@ -168,22 +168,17 @@ def configure_qa_rag_chain(llm, embeddings, embeddings_store_url, username, pass
 def configure_qa_rag_chroma_chain(llm, embeddings):
     # RAG response
     #   System: Always talk in pirate speech.
-    general_system_template = """ 
+    # Hallucination Risk
+    general_system_template = """
     Use the following pieces of context to answer the question at the end.
     The context contains question-answer pairs and their links from Stackoverflow.
-    You should prefer information from accepted or more upvoted answers.
     Make sure to rely on information from the answers and not on questions to provide accuate responses.
-    When you find particular answer in the context useful, make sure to cite it in the answer using the link.
-    If you don't know the answer, just say that you don't know, don't try to make up an answer.
     ----
     {summaries}
     ----
-    Each answer you generate should contain a section at the end of links to 
-    Stackoverflow questions and answers you found useful, which are described under Source value.
-    You can only use links to StackOverflow questions that are present in the context and always
-    add links to the end of the answer in the style of citations.
     Generate concise answers with references sources section of links to 
     relevant StackOverflow questions only at the end of the answer.
+    DO NOT include the keywords "Question:", "Answer:", "Score:", "Link:" in your answer.
     """
     general_user_template = "Question:```{question}```"
     messages = [
@@ -199,11 +194,11 @@ def configure_qa_rag_chroma_chain(llm, embeddings):
     )
 
     # ChromaDB Knowledge Database response
-    chromadb = Chroma(persist_directory="data_vec", embedding_function=embeddings)
+    chromadb = Chroma(persist_directory="data_chroma", embedding_function=embeddings)
 
     kb_qa = RetrievalQAWithSourcesChain(
         combine_documents_chain=qa_chain,
-        retriever=chromadb.as_retriever(search_kwargs={"k": 2}),
+        retriever=chromadb.as_retriever(search_kwargs={"k": 10}),
         reduce_k_below_max_tokens=False,
         max_tokens_limit=3375,
     )

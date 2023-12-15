@@ -74,16 +74,14 @@ def insert_so_data(data: dict) -> None:
 
             # ChromaDB Q&A pairs
             QA_document = Document(
-                page_content = f'''
-                    Question: {q.get("title", None)}
-                    {q.get("body_markdown", None)}
-                    Answer:
-                    {a.get("body_markdown", None)}
-                    Score:
-                    {a.get("score", 0)}
-                    Link:
-                    {q.get("link", None)}
-                ''',
+                page_content = "Question:" + q.get("title", None) + '\n' + \
+                    q.get("body_markdown", None) + '\n' + \
+                    "Answer:" + '\n' + \
+                    a.get("body_markdown", None) + '\n' + \
+                    "Score:" + '\n' + \
+                    str(a.get("score", 0)) + '\n' + \
+                    "Link:" + '\n' + \
+                    q.get("link", None),
                 metadata={
                     "source": "stackoverflow",
                     "title": q.get("title", None),
@@ -99,8 +97,12 @@ def insert_so_data(data: dict) -> None:
                     "tags": ','.join(q.get("tags", [])),
                 }
             )
-            print(QA_document)
             documents.append(QA_document)
+
+            # Write the page_content to a file for OpenAI RAG API
+            os.makedirs('data_openai', exist_ok=True)
+            with open('data_openai/data.txt', mode='a') as f:
+                f.write(QA_document.page_content + '\n\n')
 
     # Cypher, the query language of Neo4j, is used to import the data
     # https://neo4j.com/docs/getting-started/cypher-intro/
