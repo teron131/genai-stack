@@ -1,6 +1,6 @@
 import os
 
-from langchain.graphs import Neo4jGraph
+from langchain_community.graphs import Neo4jGraph
 from dotenv import load_dotenv
 from utils import (
     create_vector_index,
@@ -16,7 +16,7 @@ from chains import (
 )
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel
-from langchain.callbacks.base import BaseCallbackHandler
+from langchain_core.callbacks.base import BaseCallbackHandler
 from threading import Thread
 from queue import Queue, Empty
 from collections.abc import Generator

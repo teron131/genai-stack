@@ -1,15 +1,15 @@
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.embeddings import (
+from langchain_community.embeddings.openai import OpenAIEmbeddings
+from langchain_community.embeddings import (
     OllamaEmbeddings,
     SentenceTransformerEmbeddings,
     BedrockEmbeddings,
 )
-from langchain.chat_models import ChatOpenAI, ChatOllama, BedrockChat
-from langchain.vectorstores.neo4j_vector import Neo4jVector
-from langchain.vectorstores.chroma import Chroma
+from langchain_community.chat_models import ChatOpenAI, ChatOllama, BedrockChat
+from langchain_community.vectorstores.neo4j_vector import Neo4jVector
+from langchain_community.vectorstores.chroma import Chroma
 from langchain.chains import RetrievalQAWithSourcesChain
 from langchain.chains.qa_with_sources import load_qa_with_sources_chain
-from langchain.prompts.chat import (
+from langchain_core.prompts.chat import (
     ChatPromptTemplate,
     SystemMessagePromptTemplate,
     HumanMessagePromptTemplate,

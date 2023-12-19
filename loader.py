@@ -1,8 +1,8 @@
 import os
 import requests
 from dotenv import load_dotenv
-from langchain.graphs import Neo4jGraph
-from langchain.vectorstores.chroma import Chroma
+from langchain_community.graphs import Neo4jGraph
+from langchain_community.vectorstores.chroma import Chroma
 from langchain_core.documents.base import Document
 import streamlit as st
 from streamlit.logger import get_logger

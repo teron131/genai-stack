@@ -1,18 +1,18 @@
 import os
 import streamlit as st
 from dotenv import load_dotenv
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.chat_models import ChatOpenAI
-from langchain.vectorstores.chroma import Chroma
+from langchain_community.embeddings.openai import OpenAIEmbeddings
+from langchain_community.chat_models import ChatOpenAI
+from langchain_community.vectorstores.chroma import Chroma
 from langchain_core.documents.base import Document
 from langchain.chains import RetrievalQAWithSourcesChain
 from langchain.chains.qa_with_sources import load_qa_with_sources_chain
-from langchain.prompts.chat import (
+from langchain_core.prompts.chat import (
     ChatPromptTemplate,
     SystemMessagePromptTemplate,
     HumanMessagePromptTemplate,
 )
-from langchain.graphs import Neo4jGraph
+from langchain_community.graphs import Neo4jGraph
 from chains import (
     configure_qa_rag_chain,
 )
