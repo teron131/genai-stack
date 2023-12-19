@@ -256,6 +256,8 @@ services:
         condition: service_healthy
       pull-model:
         condition: service_completed_successfully
+    ports:
+      - 8506:8506
 
 networks:
   net:
