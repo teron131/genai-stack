@@ -120,7 +120,7 @@ if 'retrieved_docs' in st.session_state:
     st.subheader("RAG model with Neo4j")
     st.write(st.session_state['neo4j_answer'])
 
-    st.subheader("RAG model with Chroma and baseline prompt (baseline)")
+    st.subheader("RAG model with ChromaDB and baseline prompt (baseline)")
     st.write(st.session_state['baseline_prompt_answer'])
 
     # Streamlit interface for custom prompt input
@@ -134,6 +134,6 @@ if 'retrieved_docs' in st.session_state:
                 llm=llm, embeddings=embeddings, general_system_template=prompt
             )
 
-            # Get the answer from the RAG model with Chroma and custom prompt
-            st.subheader("RAG model with Chroma and custom prompt")
+            # Get the answer from the RAG model with ChromaDB and custom prompt
+            st.subheader("RAG model with ChromaDB and custom prompt")
             st.write(rag_chroma_chain_custom({"question": question})["answer"])

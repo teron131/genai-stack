@@ -74,7 +74,7 @@ def insert_so_data(data: dict) -> None:
 
             # ChromaDB Q&A pairs
             QA_document = Document(
-                page_content = "Question:" + q.get("title", None) + '\n' + \
+                page_content = "Question: " + q.get("title", None) + '\n' + \
                     q.get("body_markdown", None) + '\n' + \
                     "Answer:" + '\n' + \
                     a.get("body_markdown", None) + '\n' + \
