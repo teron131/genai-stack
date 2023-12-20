@@ -14,6 +14,7 @@ from langchain_core.prompts.chat import (
 )
 from langchain_community.graphs import Neo4jGraph
 from chains import (
+    configure_llm_only_chain,
     configure_qa_rag_chain,
 )
 
@@ -96,6 +97,10 @@ if st.button('Submit'):
     if question and 'retrieved_docs' not in st.session_state:
         query_vector = embeddings.embed_query(question)
         st.session_state['retrieved_docs'] = chromadb.similarity_search_by_vector(query_vector, k=2)
+
+        # Configure and get the answer from the model without RAG
+        llm_chain = configure_llm_only_chain(llm)
+        st.session_state['llm_answer'] = llm_chain({"question": question}, callbacks=[])["answer"]
         
         # Configure and get the answer from the RAG model with Neo4j
         rag_chain_neo4j = configure_qa_rag_chain(
@@ -116,7 +121,10 @@ if 'retrieved_docs' in st.session_state:
         st.write(f"Document: {doc[0]}")
         st.write(f"Score: {doc[1]}")
 
-    # Display answers for Neo4j and the baseline prompt
+    # Display answers for LLM, Neo4j and the baseline prompt
+    st.subheader("LLM only")
+    st.write(st.session_state['llm_answer'])   
+    
     st.subheader("RAG model with Neo4j")
     st.write(st.session_state['neo4j_answer'])
 
