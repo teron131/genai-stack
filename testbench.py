@@ -121,7 +121,7 @@ if 'retrieved_docs' in st.session_state:
         st.write(f"Document: {doc[0]}")
         st.write(f"Score: {doc[1]}")
 
-    # Display answers for LLM, Neo4j and the baseline prompt
+    # Display answers for LLM only, Neo4j  RAG and Chroma RAG with the baseline prompt
     st.subheader("LLM only")
     st.write(st.session_state['llm_answer'])   
     
