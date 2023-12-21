@@ -78,7 +78,7 @@ Generate concise answers with references sources section of links to
 relevant StackOverflow questions only at the end of the answer."""
 
 # Prepare the environment
-st.title("RAG Model Testbench")
+st.title("RAG Models Testbench")
 load_dotenv()
 url = os.getenv("NEO4J_URI")
 username = os.getenv("NEO4J_USERNAME")
@@ -88,60 +88,51 @@ embeddings = OpenAIEmbeddings()
 neo4j_graph = Neo4jGraph(url=url, username=username, password=password)
 chromadb = Chroma(persist_directory="data_chroma", embedding_function=embeddings)
 
-# Streamlit interface for question input
-question = st.text_input("Enter your question", "Is there any way to import the data to `neo4j` desktop")
+question = st.text_input("Enter your question:", "Is there any way to import the data to `neo4j` desktop")
+prompt = st.text_area("Enter your custom prompt:", general_system_template_custom, height=200)
 
-# Add a button for accepting the question
-if st.button('Submit'):
-    # Check if the question has been entered and fetch answers
-    if question and 'retrieved_docs' not in st.session_state:
-        query_vector = embeddings.embed_query(question)
-        st.session_state['retrieved_docs'] = chromadb.similarity_search_by_vector(query_vector, k=2)
+submit_button = st.button('Submit Question')
+custom_prompt_button = st.button('Get Answer with Custom Prompt')
 
-        # Configure and get the answer from the model without RAG
-        llm_chain = configure_llm_only_chain(llm)
-        st.session_state['llm_answer'] = llm_chain({"question": question}, callbacks=[])["answer"]
-        
-        # Configure and get the answer from the RAG model with Neo4j
-        rag_chain_neo4j = configure_qa_rag_chain(
-            llm, embeddings, embeddings_store_url=url, username=username, password=password
-        )
-        st.session_state['neo4j_answer'] = rag_chain_neo4j({"question": question})["answer"]
-        
-        # Configure and get answer for Chroma with the baseline prompt
-        rag_chroma_chain_baseline = configure_qa_rag_chroma_chain_test(
-            llm=llm, embeddings=embeddings, general_system_template=general_system_template_baseline
-        )
-        st.session_state['baseline_prompt_answer'] = rag_chroma_chain_baseline({"question": question})["answer"]
+# Creating tabs for each model's output
+tab1, tab2, tab3, tab4 = st.tabs(["LLM only", "RAG with Neo4j", "RAG with ChromaDB (baseline)", "RAG with ChromaDB (custom prompt)"])
 
-# Display the answers from Neo4j and Chroma with the baseline prompt if available
-### Note: There are some problems ins streamlit, so it just means that 'retrieve_docs' is initiated, but not stored
-if 'retrieved_docs' in st.session_state:
-    for doc in st.session_state['retrieved_docs']:
-        st.write(f"Document: {doc[0]}")
-        st.write(f"Score: {doc[1]}")
+if submit_button and question:
+    with tab1:
+        with st.spinner('Fetching answer...'):
+            # Configure the LLM only model
+            llm_chain = configure_llm_only_chain(llm)
+            st.session_state['llm_answer'] = llm_chain({"question": question}, callbacks=[])["answer"]
+            st.subheader("LLM only")
+            st.write(st.session_state['llm_answer'])
 
-    # Display answers for LLM only, Neo4j  RAG and Chroma RAG with the baseline prompt
-    st.subheader("LLM only")
-    st.write(st.session_state['llm_answer'])   
-    
-    st.subheader("RAG model with Neo4j")
-    st.write(st.session_state['neo4j_answer'])
+    with tab2:
+        with st.spinner('Fetching answer...'):
+            # Configure the RAG model with Neo4j
+            rag_chain_neo4j = configure_qa_rag_chain(
+                llm, embeddings, embeddings_store_url=url, username=username, password=password
+            )
+            st.session_state['neo4j_answer'] = rag_chain_neo4j({"question": question})["answer"]
+            st.subheader("RAG model with Neo4j")
+            st.write(st.session_state['neo4j_answer'])
 
-    st.subheader("RAG model with ChromaDB and baseline prompt (baseline)")
-    st.write(st.session_state['baseline_prompt_answer'])
+    with tab3:
+        with st.spinner('Fetching answer...'):
+            # Configure the RAG model with Chroma with the baseline prompt
+            rag_chroma_chain_baseline = configure_qa_rag_chroma_chain_test(
+                llm=llm, embeddings=embeddings, general_system_template=general_system_template_baseline
+            )
+            st.session_state['baseline_prompt_answer'] = rag_chroma_chain_baseline({"question": question})["answer"]
+            st.subheader("RAG model with ChromaDB and baseline prompt (baseline)")
+            st.write(st.session_state['baseline_prompt_answer'])
 
-    # Streamlit interface for custom prompt input
-    prompt = st.text_area("Enter your custom prompt", general_system_template_custom, height=200)
-
-    # Button to trigger the process for custom prompt
-    if st.button('Get Answer with Custom Prompt'):
+if custom_prompt_button and question:
+    with tab4:
         with st.spinner('Fetching answers...'):
             # Configure the RAG model with Chroma with the custom prompt
             rag_chroma_chain_custom = configure_qa_rag_chroma_chain_test(
                 llm=llm, embeddings=embeddings, general_system_template=prompt
             )
-
-            # Get the answer from the RAG model with ChromaDB and custom prompt
+            st.session_state['custom_prompt_answer'] = rag_chroma_chain_custom({"question": question})["answer"]
             st.subheader("RAG model with ChromaDB and custom prompt")
-            st.write(rag_chroma_chain_custom({"question": question})["answer"])
+            st.write(st.session_state['custom_prompt_answer'])
