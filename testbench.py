@@ -89,7 +89,7 @@ neo4j_graph = Neo4jGraph(url=url, username=username, password=password)
 chromadb = Chroma(persist_directory="data_chroma", embedding_function=embeddings)
 
 question = st.text_input("Enter your question:", "Is there any way to import the data to `neo4j` desktop")
-prompt = st.text_area("Enter your custom prompt:", general_system_template_custom, height=200)
+prompt = st.text_area("Enter your custom prompt:", general_system_template_custom, height=100)
 
 submit_button = st.button('Submit Question')
 custom_prompt_button = st.button('Get Answer with Custom Prompt')
