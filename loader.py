@@ -1,4 +1,5 @@
 import os
+import csv
 import requests
 from dotenv import load_dotenv
 from langchain_community.graphs import Neo4jGraph
@@ -59,50 +60,80 @@ def load_high_score_so_data() -> None:
 def insert_so_data(data: dict) -> None:
     documents = []
 
-    # Calculate embedding values for questions and answers
-    for q in data["items"]:
-        # Neo4j
-        question_text = q["title"] + "\n" + q["body_markdown"]
-        question_embedding = embeddings.embed_query(question_text)
-        q["embedding"] = question_embedding
+    # Prepare directory for storing CSV
+    os.makedirs('data_openai', exist_ok=True)
+    with open('data_openai/data.csv', mode='a', newline='', encoding='utf-8') as file:
+        csv_writer = csv.writer(file)
 
-        for a in q["answers"]:
+        # Write headers if the file is new/empty
+        if file.tell() == 0:
+            csv_writer.writerow([
+                "Question Title", "Question Body", "Answer Body", "Score", "Link"
+                #"Is Accepted", "Reputation", "Favorite Count", "Q Creation Date",
+                #"A Creation Date", "Answer ID", "Question ID", "Tags"
+            ])
+
+        # Calculate embedding values for questions and answers
+        for q in data["items"]:
             # Neo4j
-            answer_text = question_text + "\n" + a["body_markdown"]
-            answer_embedding = embeddings.embed_query(answer_text)
-            a["embedding"] = answer_embedding
+            question_text = q["title"] + "\n" + q["body_markdown"]
+            question_embedding = embeddings.embed_query(question_text)
+            q["embedding"] = question_embedding
 
-            # ChromaDB Q&A pairs
-            QA_document = Document(
-                page_content = "Question: " + q.get("title", None) + '\n' + \
-                    q.get("body_markdown", None) + '\n' + \
-                    "Answer:" + '\n' + \
-                    a.get("body_markdown", None) + '\n' + \
-                    "Score:" + '\n' + \
-                    str(a.get("score", 0)) + '\n' + \
-                    "Link:" + '\n' + \
-                    q.get("link", None),
-                metadata={
-                    "source": "stackoverflow",
-                    "title": q.get("title", None),
-                    "score": a.get("score", 0),
-                    "link": q.get("link", None),
-                    "is_accepted": a.get("is_accepted", False),
-                    "reputation": a.get("owner", {}).get("reputation", 0),
-                    "favorite_count": q.get("favorite_count", 0),
-                    "q_creation_date": q.get("creation_date", None),
-                    "a_creation_date": a.get("creation_date", None),
-                    "answer_id": a.get("answer_id", None),
-                    "question_id": q.get("question_id", None),
-                    "tags": ','.join(q.get("tags", [])),
-                }
-            )
-            documents.append(QA_document)
+            for a in q["answers"]:
+                # Neo4j
+                answer_text = question_text + "\n" + a["body_markdown"]
+                answer_embedding = embeddings.embed_query(answer_text)
+                a["embedding"] = answer_embedding
 
-            # Write the page_content to a file for OpenAI RAG API
-            os.makedirs('data_openai', exist_ok=True)
-            with open('data_openai/data.txt', mode='a') as f:
-                f.write(QA_document.page_content + '\n\n')
+                # ChromaDB Q&A pairs
+                QA_document = Document(
+                    page_content = "Question: " + q.get("title", None) + '\n' + \
+                        q.get("body_markdown", None) + '\n' + \
+                        "Answer:" + '\n' + \
+                        a.get("body_markdown", None) + '\n' + \
+                        "Score:" + '\n' + \
+                        str(a.get("score", 0)) + '\n' + \
+                        "Link:" + '\n' + \
+                        q.get("link", None),
+                    metadata={
+                        "source": "stackoverflow",
+                        "title": q.get("title", None),
+                        "score": a.get("score", 0),
+                        "link": q.get("link", None),
+                        "is_accepted": a.get("is_accepted", False),
+                        "reputation": a.get("owner", {}).get("reputation", 0),
+                        "favorite_count": q.get("favorite_count", 0),
+                        "q_creation_date": q.get("creation_date", None),
+                        "a_creation_date": a.get("creation_date", None),
+                        "answer_id": a.get("answer_id", None),
+                        "question_id": q.get("question_id", None),
+                        "tags": ','.join(q.get("tags", [])),
+                    }
+                )
+                documents.append(QA_document)
+
+                # Writing data to CSV
+                csv_writer.writerow([
+                    q.get("title", ""),
+                    q.get("body_markdown", ""),
+                    a.get("body_markdown", ""),
+                    a.get("score", 0),
+                    q.get("link", ""),
+                    #a.get("is_accepted", False),
+                    #a.get("owner", {}).get("reputation", 0),
+                    #q.get("favorite_count", 0),
+                    #q.get("creation_date", ""),
+                    #a.get("creation_date", ""),
+                    #a.get("answer_id", ""),
+                    #q.get("question_id", ""),
+                    #','.join(q.get("tags", []))
+                ])
+
+                # Write the page_content to a file for OpenAI RAG API
+                os.makedirs('data_openai', exist_ok=True)
+                with open('data_openai/data.txt', mode='a') as f:
+                    f.write(QA_document.page_content + '\n\n')
 
     # Cypher, the query language of Neo4j, is used to import the data
     # https://neo4j.com/docs/getting-started/cypher-intro/
