@@ -20,9 +20,7 @@ from utils import BaseLogger, extract_title_and_question
 
 def load_embedding_model(embedding_model_name: str, logger=BaseLogger(), config={}):
     if embedding_model_name == "ollama":
-        embeddings = OllamaEmbeddings(
-            base_url=config["ollama_base_url"], model="llama2"
-        )
+        embeddings = OllamaEmbeddings(base_url=config["ollama_base_url"], model="llama2")
         dimension = 4096
         logger.info("Embedding: Using Ollama")
     elif embedding_model_name == "openai":
@@ -34,9 +32,7 @@ def load_embedding_model(embedding_model_name: str, logger=BaseLogger(), config=
         dimension = 1536
         logger.info("Embedding: Using AWS")
     else:
-        embeddings = SentenceTransformerEmbeddings(
-            model_name="all-MiniLM-L6-v2", cache_folder="/embedding_model"
-        )
+        embeddings = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2", cache_folder="/embedding_model")
         dimension = 384
         logger.info("Embedding: Using SentenceTransformer")
     return embeddings, dimension
@@ -81,17 +77,11 @@ def configure_llm_only_chain(llm):
     system_message_prompt = SystemMessagePromptTemplate.from_template(template)
     human_template = "{question}"
     human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
-    chat_prompt = ChatPromptTemplate.from_messages(
-        [system_message_prompt, human_message_prompt]
-    )
+    chat_prompt = ChatPromptTemplate.from_messages([system_message_prompt, human_message_prompt])
 
-    def generate_llm_output(
-        user_input: str, callbacks: List[Any], prompt=chat_prompt
-    ) -> str:
+    def generate_llm_output(user_input: str, callbacks: List[Any], prompt=chat_prompt) -> str:
         chain = prompt | llm
-        answer = chain.invoke(
-            {"question": user_input}, config={"callbacks": callbacks}
-        ).content
+        answer = chain.invoke({"question": user_input}, config={"callbacks": callbacks}).content
         return {"answer": answer}
 
     return generate_llm_output
@@ -212,9 +202,7 @@ def configure_qa_rag_chroma_chain(llm, embeddings):
 
 def generate_ticket(neo4j_graph, llm_chain, input_question):
     # Get high ranked questions
-    records = neo4j_graph.query(
-        "MATCH (q:Question) RETURN q.title AS title, q.body AS body ORDER BY q.score DESC LIMIT 3"
-    )
+    records = neo4j_graph.query("MATCH (q:Question) RETURN q.title AS title, q.body AS body ORDER BY q.score DESC LIMIT 3")
     questions = []
     for i, question in enumerate(records, start=1):
         questions.append((question["title"], question["body"]))
@@ -241,9 +229,7 @@ def generate_ticket(neo4j_graph, llm_chain, input_question):
     ---
     """
     # we need jinja2 since the questions themselves contain curly braces
-    system_prompt = SystemMessagePromptTemplate.from_template(
-        gen_system_template, template_format="jinja2"
-    )
+    system_prompt = SystemMessagePromptTemplate.from_template(gen_system_template, template_format="jinja2")
     chat_prompt = ChatPromptTemplate.from_messages(
         [
             system_prompt,
